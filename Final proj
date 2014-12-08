@@ -1,0 +1,265 @@
+---
+title: "Final Project"
+author: "Clio3"
+date: "October 29, 2014"
+output: html_document
+---
+
+Methodology
+
+It should be noted that this is a project for a class entitled "Programming for Historians." Historians, at least good ones, let the sources lead them to their conclusions. After reading through the sources, we can make a thesis on how things have changed over time in our particuar fields of interest. So, what happens when we engage these historical sources with programming methodology? Potentially, the programming historian will be able to see things they had not seen previously or connect things in a new way. 
+
+After writing my master's level thesis and engaging in new research, I ended up with a set of data that could protentially be utilized in traditional, historical scholarship. However, given my interests in digital history, it made sense to try my hand as a programming historian to see where the sources could potentially lead.
+
+Introduction
+
+The video game industry in the United States, despite being quite a young technological field, has had an active and tumultuous career, especially when US developers were the predominant force worldwide for video games. However, despite the successful nature that the industry had, it was not without its issues. In the United States, the video game industry has long been known as a "boys' club" with limited access for non-whites and women. From the early 1960s to the mid-1980s, majority of the known video game developers were, in fact, white middle-class men. 
+
+During this time, the great majority of these developers had been involved in some sort of computer science university programs. These programs, especially for the 1960s and 1970s, were not especially diverse, and women were actively discouraged from using “masculine” high-end technologies such as computers.
+
+Since many of these game developers found inspiration, or even directly lifting the code, within each other’s work, this created a network of game developers and the video games that they developed. 
+Given this, it would be interesting to create a network analysis of a selection of video games and their known developers in order to see what kind of connections and inspirations took place from the late 1950s into the mid-1980s.
+
+Beyond just the network analysis, which will provide useful data, it may also be useful to try a few other techniques of plotting the data to see what kind of conclusions can be gained from this methodology.
+
+On Data
+
+For this project, it was important to consider utilizing the types of data for my network analysis. Using a list of video games, developers, and dates that I created during the research process, I was able to create a document for use in this project. One of the issues that arose was the lack of credit for developers in the early video game industry. With the lack of credit, there are a lot of video games without listed creators. This led to the methodology question of whether to include games without credited authors, as this would limit the networks of people, while making the networks of games quite a bit larger.
+
+
+First, I need to load any necessary packages and data regarding the developers and games that they created so we can potentially see any connections that may be possible to make.
+
+```{r}
+library(igraph)
+library(dplyr)
+library(tidyr)
+library(stringr)
+#library(mullenmisc)
+# library(sna)
+gamedevs = read.csv("~//Desktop/networkgamedevs.csv", header = TRUE)
+basedon<-gamedevs %>%
+  select(Game, Based.on)
+developer<-gamedevs %>%
+  select(Developer, Game)
+```
+
+You can also see here that once the data is loaded, it is then separated into two categories. The first is "basedon", which contains the Game and Based on categories in the CSV file. The second is which developing team worked on which games. This way, this information can be parsed out for plotting and analysis.
+
+Let's see what happens when we first try to plot the networks with the basedon information.
+
+```{r}
+options(height=1000, width = 800)
+first_graph<-graph.data.frame(basedon,directed=FALSE)
+E(first_graph)
+  set.seed(33)
+##png(file = "first_graph.png", width= 800, height=600)
+plot(first_graph, layout=layout.fruchterman.reingold, vertex.size=1, vertex.shape="square")
+##dev.off()
+title("Influence of Early Video Games 1958-1986")
+```
+
+Well, this is really interesting. This plot shows us the connections of which game influenced which other games. As you can see, there is a large portion in the center that is influenced by Space War, and that node branches out throughout the plot with many games of the period finding some influence.
+
+Let's take the second data frame I created earlier, the "developer" frame, and see what type of connections can be found between the developers and the games they created. This way, we can see what development teams existed.
+
+```{r}
+second_graph<-graph.data.frame(developer,directed=FALSE)
+E(second_graph)
+#png(file = "second_graph.png", width= 600, height=600)
+plot(second_graph, layout=layout.fruchterman.reingold, vertex.size=1)
+#dev.off()
+```
+This one gives us some information, but it's a little hard to read and decipher. I will try a different method of displaying.
+
+Let's bipartite.
+```{r}
+bipartite.mapping(second_graph)
+V(second_graph)$type <- bipartite.mapping(second_graph)$type
+is.bipartite(second_graph)
+#png(file = "secondgraph2.png", width= 600, height=600)
+plot(second_graph,layout=layout.fruchterman.reingold, vertex.size=1)
+#dev.off()
+title("Developers and their Games")
+```
+
+Okay, so this one is a little easier to understand. It shows the which developers worked on which games, and it also demonstrates connections regarding these developers, such as teams and who worked together.
+
+
+```{r}
+bipartite <- bipartite.projection(second_graph)
+#png(file = "bipartite.png", width= 600, height=600)
+plot(bipartite$proj1, layout=layout.fruchterman.reingold, vertex.size=1)
+```
+This is another view of the teams, which shows the edges as the games that are in common and the nodes are the developers.
+
+```{r}
+plot(bipartite$proj2, layout=layout.fruchterman.reingold, vertex.size=1)
+#dev.off()
+```
+
+This view shows the games with the same developers-- the opposite of what we just showed.
+
+
+```{r}
+##E(bipartite$proj2)
+##E(bipartite$proj2)$weight
+#png(file = "bipartite3.png", width= 600, height=600)
+##plot(bipartite$proj2, ,vertex.size=1, edge.width = E(bipartite$proj2)$weight)
+#dev.off()
+```
+
+Now, I want to take the same information and see if I can create a community plot through the walktrap function. Here, I am loading in the CSV again, but this time, I changed it so that it includes all the information. I have a further idea of what to do here, but I will see what this looks like first.
+
+```{r}
+gamedevs = read.csv("~//Desktop/networkgamedevs.csv", header = TRUE)
+gamedevgraph<-graph.data.frame(gamedevs, directed=FALSE)
+```
+
+```{r}
+comm<-walktrap.community(gamedevgraph)
+length(comm)
+sizes(comm)
+modularity(comm)
+membership(comm)
+memb<-membership(comm)
+names(memb[memb==1])
+#png(file = "coolgraph.png", width= 800, height=600)
+plot(gamedevgraph, layout=layout.fruchterman.reingold, vertex.color=memb,vertex.size=1, edge.width=E(gamedevgraph)$weight)
+#dev.off()
+title("Development Teams")
+```
+Well, this community plot is interesting, but this is a little messy. Let's trying it again with the information we used earlier.
+
+
+This is my "based on again.
+```{r}
+gamedevs = read.csv("~//Desktop/networkgamedevs.csv", header = TRUE)
+gamedevgraph2<-graph.data.frame(basedon, directed=FALSE)
+
+comm<-walktrap.community(basedon)
+length(comm)
+sizes(comm)
+modularity(comm)
+membership(comm)
+memb<-membership(comm)
+names(memb[memb==1])
+#png(file = "coolgraph.png", width= 800, height=600)
+plot(gamedevgraph2, layout=layout.fruchterman.reingold, vertex.color=memb,vertex.size=1, edge.width=E(gamedevgraph2)$weight)
+#dev.off()
+title("Based On Part 2")
+```
+WOW! I am really impressed with this, and I think it tells us some good information, although in very similar ways to what the first graph says.
+
+I will also try to use the developer data frame from earlier to make a community plot.
+
+```{r}
+gamedevs = read.csv("~//Desktop/networkgamedevs.csv", header = TRUE)
+gamedevgraph3<-graph.data.frame(developer, directed=FALSE)
+
+comm<-walktrap.community(developer)
+length(comm)
+sizes(comm)
+modularity(comm)
+membership(comm)
+memb<-membership(comm)
+names(memb[memb==1])
+#png(file = "coolgraph.png", width= 800, height=600)
+plot(gamedevgraph3, layout=layout.fruchterman.reingold, vertex.color=memb,vertex.size=1, edge.width=E(gamedevgraph3)$weight)
+#dev.off()
+title("Development Teams")
+```
+
+This shows which games were created by which development teams. 
+
+Although these network graphs tell us a lot about the early game industry in the United States, there are other things that can be gathered from the early game industry.
+
+Here, I loaded in another CSV file, but this one contains the title of the game, the year it was published, the format (coin-op, computer, home, etc.), place of origin, and the category (space, puzzle, etc.) of the game.
+
+```{r}
+mydata <- read.csv("~/Desktop/games.csv", stringsAsFactors=FALSE, header=TRUE)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+mydata<-read.csv("~/Desktop/games.csv")
+```
+
+Using this information, we can plot several different things from the data. For example, this plot demonstrates the numbers for different genres of games.
+
+```{r}
+ggplot(data=mydata,
+       aes(x=Type)) + geom_bar()
+```
+
+Although not a visualization, we can also do type counts, which is helpful to present next to the visualization that I just created. It shows the numbers of the genres in the data that I have.
+
+```{r}
+mydata %>%
+  group_by(Type) %>% summarize(Type_Count = n()) %>% arrange(desc(Type_Count))
+```
+
+It can also demonstrate information such as what format these games were released for in regards to the system.
+
+```{r}
+ggplot(data=mydata,
+       aes(x=Format)) + geom_bar()
+```
+
+Here, as expected, we can see that the vast amount of games that were released in the early industry were coin-operated games.
+
+
+```{r}
+mydata %>%
+  select(Year,Origin,Type)
+```
+
+Here, we will try and arrange the data so that we can find out how many games were released each year. 
+
+```{r}
+mydata %>%
+  group_by(Year) %>% 
+  summarize(Games_Per_Year = n()) %>%
+  arrange(Games_Per_Year)
+```
+
+As expected, the number is quite small at the beginning, but it has vast amounts of growth in the late 1970s and 1980s. Knowing that this was the time period where the industry was beginning to have quality control issues with many games, the growth in the early 1980s is telling. We can also visualize this through a plot.
+
+```{r}
+ggplot(data=mydata,
+       aes(x=Year)) + geom_bar()
+```
+
+This is an interesting visualization, although partially difficult to gain in depth insight beyond the early testing of video game development and the spike in the early 1980s.
+
+What else can be gleamed from this data? 
+
+Well, for instance, we can find out when each genre had its first appearance in the data. 
+
+```{r}
+mydata %>%
+  group_by(Type) %>%
+  summarize(First_Instance= min(Year))
+```
+
+
+```{r}
+mydata %>%
+  group_by(Origin) %>%
+  summarize(First_Instance= min(Year))
+```
+
+This tells us nothing really interesting.
+
+```{r}
+mydata %>%
+  group_by(Origin) %>%
+  summarize(Last_Instance= min(Year))
+```
+
+But this might!
+
+```{r}
+mydata %>%
+  group_by(Type) %>%
+  summarize(Last_Instance= max(Year))
+```
+
