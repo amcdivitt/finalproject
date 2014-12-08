@@ -131,12 +131,11 @@ title("Development Teams")
 Well, this community plot is interesting, but this is a little messy. Let's trying it again with the information we used earlier.
 
 
-This is my "based on again.
+This is my "based on"" again.
 ```{r}
 gamedevs = read.csv("~//Desktop/networkgamedevs.csv", header = TRUE)
 gamedevgraph2<-graph.data.frame(basedon, directed=FALSE)
-
-comm<-walktrap.community(basedon)
+comm<-walktrap.community(gamedevgraph2)
 length(comm)
 sizes(comm)
 modularity(comm)
@@ -156,7 +155,7 @@ I will also try to use the developer data frame from earlier to make a community
 gamedevs = read.csv("~//Desktop/networkgamedevs.csv", header = TRUE)
 gamedevgraph3<-graph.data.frame(developer, directed=FALSE)
 
-comm<-walktrap.community(developer)
+comm<-walktrap.community(gamedevgraph3)
 length(comm)
 sizes(comm)
 modularity(comm)
@@ -262,4 +261,10 @@ mydata %>%
   group_by(Type) %>%
   summarize(Last_Instance= max(Year))
 ```
+
+
+
+
+
+
 
